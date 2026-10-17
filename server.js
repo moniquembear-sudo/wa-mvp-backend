@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const morgan = require('morgan');
 const db = require('./src/db/low');
+const processor = require('./src/processor');
 const { startWatcher } = require('./watcher');
 
 const app = express();
@@ -24,9 +25,9 @@ app.get('/', async (req, res) => {
 
   let groups = [];
   if (fs.existsSync(mediaRoot)) {
-    groups = fs.readdirSync(mediaRoot).filter(f => {
-      return fs.statSync(path.join(mediaRoot, f)).isDirectory();
-    });
+    groups = fs.readdirSync(mediaRoot).filter(f =>
+      fs.statSync(path.join(mediaRoot, f)).isDirectory()
+    );
   }
 
   const groupStats = groups.map(g => {
@@ -58,11 +59,8 @@ app.post('/api/set-group', async (req, res) => {
     return res.status(400).json({ error: 'El nombre del grupo es obligatorio' });
   }
 
-  // Cerramos cualquier sesión activa antes de crear una nueva
   const active = await db.getActiveSession();
-  if (active) {
-    await db.closeSession(active._id);
-  }
+  if (active) await db.closeSession(active._id);
 
   const session = await db.createSession(group.trim());
   console.log(`[Server] Nueva sesión: ${session.group} (${session._id})`);
@@ -71,10 +69,7 @@ app.post('/api/set-group', async (req, res) => {
 
 app.post('/api/close-session', async (req, res) => {
   const active = await db.getActiveSession();
-  if (active) {
-    await db.closeSession(active._id);
-    console.log(`[Server] Sesión cerrada: ${active._id}`);
-  }
+  if (active) await db.closeSession(active._id);
   res.json({ ok: true });
 });
 
@@ -88,8 +83,16 @@ app.get('/api/products/:group', async (req, res) => {
   res.json({ group: req.params.group, count: products.length, products });
 });
 
-// Arranque
-app.listen(PORT, '127.0.0.1', () => {
+app.get('/api/products', async (req, res) => {
+  const products = await db.getAllProducts();
+  res.json({ count: products.length, products });
+});
+
+// ---- ARRANQUE ----
+
+app.listen(PORT, '127.0.0.1', async () => {
   console.log(`[Server] http://127.0.0.1:${PORT}`);
   startWatcher();
+  // Procesa las imágenes pendientes que quedaron de sesiones anteriores
+  await processor.processPending();
 });
