@@ -1,0 +1,26 @@
+# Dependencias
+node_modules/
+
+# Datos de la base de datos (lowdb)
+data/
+
+# Imágenes movidas desde WhatsApp
+media/
+
+# Exportaciones generadas
+exports/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archivos de entorno
+.env
+
+# Caché de Tesseract
+.cache/
+tesseract-*
+
+# Sistema
+.DS_Store
+Thumbs.db

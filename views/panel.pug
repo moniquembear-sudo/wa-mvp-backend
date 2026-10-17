@@ -1,0 +1,54 @@
+extends layout
+
+block content
+  section.card
+    h2 Estado actual
+    if currentGroup
+      .status.active
+        span.dot
+        span Grupo activo: 
+        strong= currentGroup
+      p.session ID: 
+        code= sessionId
+      p Iniciado: 
+        code= startTime
+      form(action="/api/close-session", method="POST", onsubmit="return closeSession(event)")
+        button.btn.btn-danger(type="submit") Cerrar sesión
+    else
+      .status.inactive
+        span.dot
+        span Sin sesión activa
+
+  section.card
+    h2 Cambiar grupo
+    form#groupForm
+      label(for="group") Nombre del grupo
+      input#groupInput(
+        type="text",
+        name="group",
+        placeholder="Ej: MIPYME 3 MATANZAS",
+        autocomplete="off",
+        required
+      )
+      button.btn.btn-primary(type="submit") Activar grupo
+
+    if groups.length
+      h3 Grupos existentes
+      ul.group-list
+        each g in groups
+          li
+            button.group-btn(
+              type="button",
+              data-group=g.name
+            )
+              span.group-name= g.name
+              span.group-count= g.count + ' archivos'
+
+  section.card
+    h2 Instrucciones
+    ol.steps
+      li Activa un grupo en el formulario de arriba.
+      li Abre WhatsApp y descarga las imágenes del grupo correspondiente.
+      li Las imágenes se moverán automáticamente a la carpeta del grupo.
+      li Cuando termines, cambia de grupo o cierra la sesión.
+  script(src="/panel.js")

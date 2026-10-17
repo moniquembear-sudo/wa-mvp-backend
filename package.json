@@ -1,0 +1,48 @@
+{
+  "name": "wa-mvp-backend",
+  "version": "1.0.0",
+  "description": "MVP para organización, OCR y clasificación de imágenes descargadas manualmente desde grupos de WhatsApp",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "watcher": "node watcher.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "whatsapp",
+    "ocr",
+    "express",
+    "pug",
+    "orbitaldb",
+    "termux",
+    "mvp"
+  ],
+  "author": "Tu nombre",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "lowdb": "^7.0.1",
+    "morgan": "^1.10.0",
+    "pug": "^3.0.3",
+    "tesseract.js": "^5.1.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "orbitaldb": {
+    "path": "./data",
+    "collections": [
+      "sessions",
+      "media",
+      "products"
+    ]
+  }
+}
