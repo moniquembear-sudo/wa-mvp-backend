@@ -13,11 +13,17 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/media-files', express.static(path.join(__dirname, 'media')));
 
 app.set('view engine', 'pug');
 app.set('views', path.join(__dirname, 'views'));
 
-// ---- PANEL ----
+// Función para sanitizar el nombre del grupo (igual que en watcher.js)
+function sanitizeGroupName(name) {
+  return name.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').substring(0, 60);
+}
+
+// ---- PANEL DE GRUPOS ----
 
 app.get('/', async (req, res) => {
   const activeSession = await db.getActiveSession();
@@ -46,6 +52,34 @@ app.get('/', async (req, res) => {
   });
 });
 
+// ---- PANEL DE PRODUCTOS ----
+
+app.get('/panel/products', async (req, res) => {
+  const dbInstance = await db.getDb();
+  const groups = [...new Set(dbInstance.data.products.map(p => p.group))];
+  const group = req.query.group || groups[0] || null;
+
+  let products = [];
+  if (group) {
+    products = dbInstance.data.products
+      .filter(p => p.group === group)
+      .map(p => {
+        const mediaDoc = dbInstance.data.media.find(m => m._id === p.media_id);
+        return {
+          ...p,
+          media_filename: mediaDoc ? mediaDoc.filename : null,
+          media_group_folder: mediaDoc ? sanitizeGroupName(mediaDoc.group) : null,
+        };
+      });
+  }
+
+  res.render('products', {
+    groups,
+    selectedGroup: group,
+    products,
+  });
+});
+
 // ---- API ----
 
 app.get('/api/status', async (req, res) => {
@@ -58,10 +92,8 @@ app.post('/api/set-group', async (req, res) => {
   if (!group || !group.trim()) {
     return res.status(400).json({ error: 'El nombre del grupo es obligatorio' });
   }
-
   const active = await db.getActiveSession();
   if (active) await db.closeSession(active._id);
-
   const session = await db.createSession(group.trim());
   console.log(`[Server] Nueva sesión: ${session.group} (${session._id})`);
   res.json(session);
@@ -78,14 +110,49 @@ app.get('/api/media/:group', async (req, res) => {
   res.json({ group: req.params.group, count: mediaList.length, files: mediaList });
 });
 
+app.get('/api/products', async (req, res) => {
+  const products = await db.getAllProducts();
+  res.json({ count: products.length, products });
+});
+
 app.get('/api/products/:group', async (req, res) => {
   const products = await db.getProductsByGroup(req.params.group);
   res.json({ group: req.params.group, count: products.length, products });
 });
 
-app.get('/api/products', async (req, res) => {
-  const products = await db.getAllProducts();
-  res.json({ count: products.length, products });
+app.post('/api/products/:id', async (req, res) => {
+  const { price, currency, category, ocr_text, published } = req.body;
+  await db.updateProduct(req.params.id, {
+    price: price ? parseFloat(price) : null,
+    currency: currency || 'USD',
+    category: category || 'Sin categoría',
+    ocr_text: ocr_text || '',
+    published: published === 'true' || published === true,
+    updated_at: new Date().toISOString(),
+  });
+  res.json({ ok: true });
+});
+
+app.delete('/api/products/:id', async (req, res) => {
+  await db.deleteProduct(req.params.id);
+  res.json({ ok: true });
+});
+
+// ---- DEBUG ----
+
+app.get('/api/debug/products', async (req, res) => {
+  const dbInstance = await db.getDb();
+  res.json({
+    products_count: dbInstance.data.products.length,
+    media_count: dbInstance.data.media.length,
+    sample_product: dbInstance.data.products[0] || null,
+    sample_media: dbInstance.data.media[0] || null,
+    media_paths: dbInstance.data.media.slice(0, 3).map(m => ({
+      filename: m.filename,
+      group: m.group,
+      group_folder: sanitizeGroupName(m.group),
+    })),
+  });
 });
 
 // ---- ARRANQUE ----
@@ -93,6 +160,5 @@ app.get('/api/products', async (req, res) => {
 app.listen(PORT, '127.0.0.1', async () => {
   console.log(`[Server] http://127.0.0.1:${PORT}`);
   startWatcher();
-  // Procesa las imágenes pendientes que quedaron de sesiones anteriores
   await processor.processPending();
 });

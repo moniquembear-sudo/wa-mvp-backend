@@ -24,3 +24,5 @@ tesseract-*
 # Sistema
 .DS_Store
 Thumbs.db
+*.traineddata
+*.idx

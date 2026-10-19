@@ -135,6 +135,28 @@ async function markProductPublished(productId) {
     }
   });
 }
+// ---- PRODUCTOS (NUEVO) ----
+
+async function getProductById(productId) {
+  const db = await getDb();
+  return db.data.products.find(p => p._id === productId) || null;
+}
+
+async function updateProduct(productId, updates) {
+  const db = await getDb();
+  await db.update(({ products }) => {
+    const p = products.find(p => p._id === productId);
+    if (p) Object.assign(p, updates);
+  });
+}
+
+async function deleteProduct(productId) {
+  const db = await getDb();
+  await db.update(({ products }) => {
+    const idx = products.findIndex(p => p._id === productId);
+    if (idx !== -1) products.splice(idx, 1);
+  });
+}
 
 module.exports = {
   getDb,
@@ -148,5 +170,8 @@ module.exports = {
   markMediaProcessed,
   getProductsByGroup,
   getAllProducts,
-  markProductPublished
+  markProductPublished,
+  getProductById,
+  updateProduct,
+  deleteProduct,
 };

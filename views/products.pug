@@ -1,0 +1,56 @@
+extends layout
+
+block content
+  section.card
+    h2 Productos
+    if groups.length === 0
+      p.no-data No hay productos procesados aún.
+    else
+      form.group-filter
+        label(for="groupFilter") Grupo
+        select#groupFilter(name="group", onchange="window.location.href='/panel/products?group=' + encodeURIComponent(this.value)")
+          each g in groups
+            option(value=g, selected=(g === selectedGroup))= g
+
+  if products.length > 0
+    .product-grid
+      each p in products
+        section.card.product-card
+          if p.media_filename && p.media_group_folder
+            img.product-img(
+              src=`/media-files/${p.media_group_folder}/${p.media_filename}`,
+              alt=p.category || 'Producto',
+              loading="lazy"
+            )
+          else
+            .no-img Sin imagen
+
+          h3= p.category || 'Sin categoría'
+
+          if p.price
+            p.price= `${p.price} ${p.currency || 'USD'}`
+          else
+            p.price.sin-precio Sin precio
+
+          details.ocr-details
+            summary Ver texto OCR
+            pre.ocr-text= p.ocr_text || '(sin texto OCR)'
+
+          form.product-form(data-id=p._id)
+            .row
+              label Precio
+              input(type="number", step="0.01", name="price", value=p.price || '')
+              label Moneda
+              select(name="currency")
+                option(value="USD", selected=(p.currency === 'USD')) USD
+                option(value="CUP", selected=(p.currency === 'CUP')) CUP
+            .row
+              label Categoría
+              input(type="text", name="category", value=p.category || '')
+            .row
+              label Publicado
+              input(type="checkbox", name="published", checked=p.published)
+            .actions
+              button.btn.btn-primary(type="submit") Guardar
+              button.btn.btn-danger(type="button", onclick=`deleteProduct('${p._id}')`) Eliminar
+  script(src="/products.js")

@@ -26,6 +26,8 @@ body {
   line-height: 1.5;
 }
 
+/* ---- HEADER ---- */
+
 .header {
   padding: 1.5rem 1rem;
   background: var(--card);
@@ -44,10 +46,33 @@ body {
   margin-top: 0.25rem;
 }
 
+.nav {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.nav a {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.nav a:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* ---- LAYOUT ---- */
+
 .container {
   flex: 1;
   width: 100%;
-  max-width: 640px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 1rem;
   display: flex;
@@ -74,6 +99,8 @@ body {
   color: var(--muted);
   font-weight: 500;
 }
+
+/* ---- STATUS (panel de grupos) ---- */
 
 .status {
   display: flex;
@@ -115,6 +142,8 @@ body {
   word-break: break-all;
 }
 
+/* ---- FORMULARIOS ---- */
+
 form {
   display: flex;
   flex-direction: column;
@@ -126,7 +155,9 @@ label {
   color: var(--muted);
 }
 
-input[type="text"] {
+input[type="text"],
+input[type="number"],
+select {
   padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -137,9 +168,13 @@ input[type="text"] {
   transition: border 0.2s;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
   border-color: var(--primary);
 }
+
+/* ---- BOTONES ---- */
 
 .btn {
   padding: 0.75rem 1rem;
@@ -162,12 +197,13 @@ input[type="text"]:focus {
 
 .btn-danger {
   background: var(--danger);
-  margin-top: 0.5rem;
 }
 
 .btn-danger:hover {
   background: #dc2626;
 }
+
+/* ---- LISTA DE GRUPOS (panel principal) ---- */
 
 .group-list {
   list-style: none;
@@ -202,6 +238,8 @@ input[type="text"]:focus {
   color: var(--muted);
 }
 
+/* ---- INSTRUCCIONES ---- */
+
 .steps {
   padding-left: 1.25rem;
   color: var(--muted);
@@ -211,6 +249,158 @@ input[type="text"]:focus {
   gap: 0.5rem;
 }
 
+/* ---- FILTRO DE GRUPO (panel de productos) ---- */
+
+.group-filter {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.group-filter select {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* ---- GRID DE PRODUCTOS ---- */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  background: var(--bg);
+}
+
+.no-img {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.product-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 0.5rem;
+}
+
+.price.sin-precio {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+/* ---- TEXTO OCR COLAPSABLE ---- */
+
+.ocr-details {
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.ocr-details summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.25rem 0;
+}
+
+.ocr-details .ocr-text {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  max-height: 150px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-family: monospace;
+}
+
+/* ---- FORMULARIO DE PRODUCTO ---- */
+
+.product-form .row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.product-form label {
+  min-width: 70px;
+  font-size: 0.85rem;
+}
+
+.product-form input[type="text"],
+.product-form input[type="number"],
+.product-form select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  flex: 1;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+.product-form .actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.product-form .actions .btn {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+/* ---- ESTADOS VACÍOS ---- */
+
+.no-data {
+  color: var(--muted);
+  text-align: center;
+  padding: 1rem;
+}
+
+/* ---- FOOTER ---- */
+
 .footer {
   padding: 1rem;
   text-align: center;
@@ -219,9 +409,16 @@ input[type="text"]:focus {
   border-top: 1px solid var(--border);
 }
 
-/* Responsive: en pantallas grandes, más espacio */
+/* ---- RESPONSIVE (pantallas grandes) ---- */
+
 @media (min-width: 640px) {
-  .header h1 { font-size: 1.75rem; }
-  .container { padding: 2rem 1rem; }
-  .card { padding: 1.5rem; }
+  .header h1 {
+    font-size: 1.75rem;
+  }
+  .container {
+    padding: 2rem 1rem;
+  }
+  .card {
+    padding: 1.5rem;
+  }
 }

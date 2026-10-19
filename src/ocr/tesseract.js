@@ -1,35 +1,48 @@
 const Tesseract = require('tesseract.js');
-const path = require('path');
 const fs = require('fs');
 
-// Idioma: español + inglés (por si los precios vienen en USD)
-const LANG = 'spa+eng';
+// Configuración
+const WORKER_COUNT = 2; // 2 es seguro para Termux
+const LANG = 'eng';
+const FAST_LANG_PATH = 'https://tessdata.projectnaptha.com/4.0.0_fast'; // Modelo rápido
 
-// Worker persistente para no reiniciar Tesseract en cada imagen
-let worker = null;
+let scheduler = null;
 
-async function getWorker() {
-  if (!worker) {
-    console.log('[OCR] Inicializando worker de Tesseract...');
-    worker = await Tesseract.createWorker(LANG, 1, {
-      // Sin logger para no llenar la consola en producción
-      // logger: m => console.log('[OCR]', m),
+async function initScheduler() {
+  if (scheduler) return;
+  
+  console.log('[OCR] Inicializando pool de workers (modo rápido)...');
+  scheduler = Tesseract.createScheduler();
+  
+  for (let i = 0; i < WORKER_COUNT; i++) {
+    const worker = await Tesseract.createWorker(LANG, 1, {
+      langPath: FAST_LANG_PATH, // Usar modelo rápido
+      // No usamos corePath personalizado
     });
-    console.log('[OCR] Worker listo.');
+    
+    // Configurar whitelist para precios
+    await worker.setParameters({
+     // tessedit_char_whitelist: '0123456789$.,USD CUP',
+      tessedit_pageseg_mode: '6', // Bloque uniforme de texto
+    });
+    
+    scheduler.addWorker(worker);
+    console.log(`[OCR] Worker ${i + 1} listo.`);
   }
-  return worker;
+  console.log('[OCR] Pool listo.');
 }
 
-// Procesa una imagen y devuelve el texto extraído
 async function extractText(imagePath) {
   if (!fs.existsSync(imagePath)) {
     throw new Error(`Imagen no encontrada: ${imagePath}`);
   }
 
-  const w = await getWorker();
-  const { data } = await w.recognize(imagePath);
+  if (!scheduler) {
+    await initScheduler();
+  }
 
-  // Limpiamos el texto: quitamos líneas vacías y espacios extra
+  const { data } = await scheduler.addJob('recognize', imagePath);
+  
   const text = (data.text || '')
     .split('\n')
     .map(line => line.trim())
@@ -39,12 +52,11 @@ async function extractText(imagePath) {
   return text;
 }
 
-// Cierra el worker (útil al apagar el server)
 async function terminate() {
-  if (worker) {
-    await worker.terminate();
-    worker = null;
-    console.log('[OCR] Worker terminado.');
+  if (scheduler) {
+    await scheduler.terminate();
+    scheduler = null;
+    console.log('[OCR] Pool terminado.');
   }
 }
 
