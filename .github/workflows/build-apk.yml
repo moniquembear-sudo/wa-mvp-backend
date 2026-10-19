@@ -1,0 +1,47 @@
+name: Build Floating Bubble APK
+
+on:
+  push:
+    paths:
+      - 'floating-bubble-app/**'
+  workflow_dispatch: # Permite ejecutarlo manualmente desde la pestaña Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        working-directory: ./floating-bubble-app
+        run: npm install
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build APK (Debug)
+        working-directory: ./floating-bubble-app
+        run: |
+          # Genera la estructura nativa de Android si no existe
+          npx react-native config
+          # Compila un APK de debug (no requiere firma de release)
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: floating-bubble-debug-apk
+          path: floating-bubble-app/android/app/build/outputs/apk/debug/app-debug.apk

@@ -1,0 +1,13 @@
+{
+  "name": "floating-bubble-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "@increase21/rn-floating-bubble": "^1.0.1"
+  }
+}
