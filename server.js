@@ -157,8 +157,8 @@ app.get('/api/debug/products', async (req, res) => {
 
 // ---- ARRANQUE ----
 
-app.listen(PORT, '127.0.0.1', async () => {
-  console.log(`[Server] http://127.0.0.1:${PORT}`);
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`[Server] http://0.0.0.0:${PORT}`);
   startWatcher();
   await processor.processPending();
 });

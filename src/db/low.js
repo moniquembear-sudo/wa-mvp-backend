@@ -173,5 +173,5 @@ module.exports = {
   markProductPublished,
   getProductById,
   updateProduct,
-  deleteProduct,
+  deleteProduct
 };
