@@ -36,12 +36,12 @@ jobs:
         working-directory: ./floating-bubble-app/android
         run: chmod +x gradlew
 
-      - name: Build APK (Debug)
+      - name: Build APK (Release)
         working-directory: ./floating-bubble-app/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: floating-bubble-debug-apk
-          path: floating-bubble-app/android/app/build/outputs/apk/debug/app-debug.apk
+           name: floating-bubble-release-apk
+           path: floating-bubble-app/android/app/build/outputs/apk/release/app-release.apk
