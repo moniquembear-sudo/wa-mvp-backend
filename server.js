@@ -155,6 +155,17 @@ app.get('/api/debug/products', async (req, res) => {
   });
 });
 
+app.get('/api/groups', async (req, res) => {
+  try {
+    const dbInstance = await db.getDb();
+    // Obtenemos grupos únicos de las sesiones o de los productos
+    const groups = [...new Set(dbInstance.data.sessions.map(s => s.group))];
+    res.json(groups);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- ARRANQUE ----
 
 app.listen(PORT, async () => {
