@@ -18,7 +18,7 @@ const App = () => {
 
   const setGroup = async (groupName) => {
     try {
-      const res = await fetch('http://10.210.251.171:3000/api/set-group', {
+      const res = await fetch('http://127.0.0.1:3000/api/set-group', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group: groupName }),
