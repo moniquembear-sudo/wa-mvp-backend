@@ -8,7 +8,8 @@ import FloatingBubble from '@increase21/rn-floating-bubble';
 const App = () => {
   const [groups, setGroups] = useState([]);
   const [activeGroup, setActiveGroup] = useState('ninguno');
-  const [modalVisible, setModalVisible] = useState(false);
+  // Iniciamos en true para que al abrir la app (desde la burbuja) muestre el modal de inmediato
+  const [modalVisible, setModalVisible] = useState(true);
 
   // 1. Obtener grupos del backend
   const fetchGroups = async () => {
@@ -17,34 +18,30 @@ const App = () => {
       if (res.ok) {
         const data = await res.json();
         setGroups(data);
+      } else {
+        ToastAndroid.show('Error al cargar grupos', ToastAndroid.SHORT);
       }
     } catch (e) {
-      console.log('Error fetching groups', e);
+      ToastAndroid.show('Error de conexión al backend', ToastAndroid.SHORT);
     }
   };
 
-  // 2. Configurar la burbuja
+  // 2. Configurar la burbuja y la carga inicial
   useEffect(() => {
     const setup = async () => {
       const granted = await FloatingBubble.requestPermission();
       if (granted) {
         await FloatingBubble.show();
-        
-        // Como la librería abre la app al tocar la burbuja, 
-        // usamos esto para mostrar el modal.
-        FloatingBubble.addListener('onPress', () => {
-          setModalVisible(true);
-        });
       }
     };
     setup();
     fetchGroups();
 
-    // Manejar el botón físico "Atrás" de Android para cerrar el modal
+    // Si el usuario presiona "Atrás" en Android, minimizamos la app
     const backAction = () => {
       if (modalVisible) {
-        setModalVisible(false);
-        return true; // Evita que la app se cierre
+        BackHandler.exitApp(); // Cierra/minimiza la app volviendo a WhatsApp
+        return true;
       }
       return false;
     };
@@ -65,12 +62,11 @@ const App = () => {
       if (res.ok) {
         const data = await res.json();
         setActiveGroup(data.group || groupName);
+        ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
         
-        // Notificación nativa de Android
-        ToastAndroid.show(`Grupo cambiado a: ${groupName}`, ToastAndroid.SHORT);
-        
-        // Cerramos el modal inmediatamente para volver a WhatsApp
+        // Cerramos el modal y minimizamos la app para volver a WhatsApp
         setModalVisible(false);
+        setTimeout(() => BackHandler.exitApp(), 200); 
       } else {
         Alert.alert('Error', 'El servidor rechazó la petición');
       }
@@ -80,23 +76,22 @@ const App = () => {
   };
 
   // 4. Cerrar la burbuja
-  const handleCloseApp = async () => {
+  const handleCloseBubble = async () => {
     await FloatingBubble.hide();
     setModalVisible(false);
     ToastAndroid.show('Burbuja cerrada', ToastAndroid.SHORT);
+    setTimeout(() => BackHandler.exitApp(), 200);
   };
 
   return (
     <View style={styles.mainContainer}>
-      {/* Pantalla principal (solo visible si el modal no está abierto) */}
-      <Text style={styles.title}>App en segundo plano</Text>
-      <Text style={styles.subtitle}>Usa la burbuja flotante para cambiar de grupo.</Text>
-      
-      <TouchableOpacity style={styles.closeBtn} onPress={handleCloseApp}>
-        <Text style={styles.closeText}>Cerrar Burbuja y App</Text>
+      {/* Pantalla de fondo (solo visible si el modal se cancela manualmente) */}
+      <Text style={styles.subtitle}>App en segundo plano</Text>
+      <TouchableOpacity style={styles.closeBtn} onPress={handleCloseBubble}>
+        <Text style={styles.closeText}>Cerrar Burbuja</Text>
       </TouchableOpacity>
 
-      {/* El Bottom Sheet / Panel Flotante */}
+      {/* Panel flotante (Modal) */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -108,25 +103,34 @@ const App = () => {
             <View style={styles.dragIndicator} />
             <Text style={styles.modalTitle}>Seleccionar Grupo</Text>
             
-            <FlatList
-              data={groups}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => setGroup(item)}
-                  style={[
-                    styles.groupItem,
-                    item === activeGroup && styles.groupItemActive
-                  ]}
-                >
-                  <Text style={styles.groupText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
+            {groups.length === 0 ? (
+              <Text style={{color: '#fff', textAlign: 'center', marginBottom: 20}}>
+                Cargando grupos o ninguno disponible...
+              </Text>
+            ) : (
+              <FlatList
+                data={groups}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => setGroup(item)}
+                    style={[
+                      styles.groupItem,
+                      item === activeGroup && styles.groupItemActive
+                    ]}
+                  >
+                    <Text style={styles.groupText}>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
             
             <TouchableOpacity 
               style={styles.cancelBtn} 
-              onPress={() => setModalVisible(false)}
+              onPress={() => {
+                setModalVisible(false);
+                setTimeout(() => BackHandler.exitApp(), 200); // Volver a WhatsApp
+              }}
             >
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
@@ -145,7 +149,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  title: { fontSize: 20, color: '#fff', marginBottom: 10 },
   subtitle: { color: '#94a3b8', marginBottom: 30, textAlign: 'center' },
   closeBtn: {
     backgroundColor: '#ef4444',
@@ -156,18 +159,17 @@ const styles = StyleSheet.create({
   },
   closeText: { color: '#fff', fontWeight: 'bold' },
   
-  // Estilos del Bottom Sheet
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semitransparente (se ve WhatsApp detrás)
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', 
   },
   modalContent: {
     backgroundColor: '#1e293b',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '60%', // No ocupa toda la pantalla
+    maxHeight: '60%',
   },
   dragIndicator: {
     width: 40,
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   groupItemActive: {
-    backgroundColor: '#22c55e', // Verde si es el activo
+    backgroundColor: '#22c55e',
   },
   groupText: { color: '#fff', fontSize: 16 },
   cancelBtn: {
