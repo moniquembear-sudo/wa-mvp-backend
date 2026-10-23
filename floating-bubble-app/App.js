@@ -1,67 +1,59 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Button, FlatList, TouchableOpacity, Alert, AppState } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  View, Text, TouchableOpacity, FlatList, Alert, 
+  Modal, StyleSheet, ToastAndroid, BackHandler 
+} from 'react-native';
 import FloatingBubble from '@increase21/rn-floating-bubble';
 
 const App = () => {
   const [groups, setGroups] = useState([]);
   const [activeGroup, setActiveGroup] = useState('ninguno');
-  const [lastTap, setLastTap] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
 
   // 1. Obtener grupos del backend
   const fetchGroups = async () => {
     try {
-      // Asumiendo que tienes un endpoint /api/groups o usamos los productos
-      // Si no tienes /api/groups, podemos usar el de sesiones
       const res = await fetch('http://127.0.0.1:3000/api/groups');
       if (res.ok) {
         const data = await res.json();
         setGroups(data);
-      } else {
-        // Fallback temporal por si no creaste el endpoint
-        setGroups(['grupo prueba 1', 'grupo prueba 2', 'MIPYME 3 MATANZAS']);
       }
     } catch (e) {
       console.log('Error fetching groups', e);
-      setGroups(['grupo prueba 1', 'grupo prueba 2']); // Fallback
     }
   };
 
-  useEffect(() => {
-    fetchGroups();
-  }, []);
-
-  // 2. Configurar la burbuja y los gestos
+  // 2. Configurar la burbuja
   useEffect(() => {
     const setup = async () => {
       const granted = await FloatingBubble.requestPermission();
       if (granted) {
         await FloatingBubble.show();
-        // Lógica de toque en la burbuja
+        
+        // Como la librería abre la app al tocar la burbuja, 
+        // usamos esto para mostrar el modal.
         FloatingBubble.addListener('onPress', () => {
-          const now = Date.now();
-          const DOUBLE_PRESS_DELAY = 300;
-          
-          if (now - lastTap < DOUBLE_PRESS_DELAY) {
-            // Doble toque: Abrir la app (simulado trayéndola al frente)
-            // En React Native, para traer al frente desde un servicio, 
-            // se requiere una librería nativa o usar AppState. 
-            // Por ahora, mostraremos un Alert o pediremos al usuario que abra la app.
-            Alert.alert('Configuración', 'Aquí iría la configuración o apertura de app');
-          } else {
-            // Un solo toque: Cambiar al siguiente grupo
-            if (groups.length > 0) {
-              const currentIndex = groups.indexOf(activeGroup);
-              const nextIndex = (currentIndex + 1) % groups.length;
-              setGroup(groups[nextIndex]);
-            }
-          }
-          setLastTap(now);
+          setModalVisible(true);
         });
       }
     };
     setup();
-  }, [groups, activeGroup, lastTap]); // Dependencias para que el listener tenga los datos actuales
+    fetchGroups();
 
+    // Manejar el botón físico "Atrás" de Android para cerrar el modal
+    const backAction = () => {
+      if (modalVisible) {
+        setModalVisible(false);
+        return true; // Evita que la app se cierre
+      }
+      return false;
+    };
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [modalVisible]);
+
+  // 3. Cambiar de grupo
   const setGroup = async (groupName) => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/set-group', {
@@ -69,9 +61,16 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group: groupName }),
       });
+      
       if (res.ok) {
         const data = await res.json();
         setActiveGroup(data.group || groupName);
+        
+        // Notificación nativa de Android
+        ToastAndroid.show(`Grupo cambiado a: ${groupName}`, ToastAndroid.SHORT);
+        
+        // Cerramos el modal inmediatamente para volver a WhatsApp
+        setModalVisible(false);
       } else {
         Alert.alert('Error', 'El servidor rechazó la petición');
       }
@@ -80,49 +79,127 @@ const App = () => {
     }
   };
 
-  // 3. Botón para cerrar la burbuja y la app
+  // 4. Cerrar la burbuja
   const handleCloseApp = async () => {
-    await FloatingBubble.hide(); // Esto destruye el servicio en primer plano
-    // En Android, para cerrar completamente la app:
-    // BackHandler.exitApp(); (requiere import { BackHandler } from 'react-native')
-    // O simplemente el usuario la quita de recientes. 
-    // Pero con hide() la burbuja ya desaparece.
-    Alert.alert('Burbuja cerrada', 'La burbuja ya no está flotando.');
+    await FloatingBubble.hide();
+    setModalVisible(false);
+    ToastAndroid.show('Burbuja cerrada', ToastAndroid.SHORT);
   };
 
   return (
-    <View style={{ flex: 1, padding: 20, backgroundColor: '#0f172a' }}>
-      <Text style={{ fontSize: 20, color: '#fff', marginBottom: 10, textAlign: 'center' }}>
-        Icono Flotante
-      </Text>
-      <Text style={{ color: '#94a3b8', marginBottom: 20, textAlign: 'center' }}>
-        Grupo activo: {activeGroup}
-      </Text>
+    <View style={styles.mainContainer}>
+      {/* Pantalla principal (solo visible si el modal no está abierto) */}
+      <Text style={styles.title}>App en segundo plano</Text>
+      <Text style={styles.subtitle}>Usa la burbuja flotante para cambiar de grupo.</Text>
+      
+      <TouchableOpacity style={styles.closeBtn} onPress={handleCloseApp}>
+        <Text style={styles.closeText}>Cerrar Burbuja y App</Text>
+      </TouchableOpacity>
 
-      <Button title="Actualizar Grupos" onPress={fetchGroups} color="#3b82f6" />
-      <View style={{ height: 10 }} />
-
-      <FlatList
-        data={groups}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => setGroup(item)}
-            style={{ 
-              backgroundColor: item === activeGroup ? '#22c55e' : '#1e293b', 
-              padding: 15, 
-              borderRadius: 8, 
-              marginBottom: 10 
-            }}
-          >
-            <Text style={{ color: '#fff' }}>{item}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      <Button title="Cerrar Burbuja y App" onPress={handleCloseApp} color="#ef4444" />
+      {/* El Bottom Sheet / Panel Flotante */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.dragIndicator} />
+            <Text style={styles.modalTitle}>Seleccionar Grupo</Text>
+            
+            <FlatList
+              data={groups}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => setGroup(item)}
+                  style={[
+                    styles.groupItem,
+                    item === activeGroup && styles.groupItemActive
+                  ]}
+                >
+                  <Text style={styles.groupText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            
+            <TouchableOpacity 
+              style={styles.cancelBtn} 
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.cancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: { fontSize: 20, color: '#fff', marginBottom: 10 },
+  subtitle: { color: '#94a3b8', marginBottom: 30, textAlign: 'center' },
+  closeBtn: {
+    backgroundColor: '#ef4444',
+    padding: 15,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+  },
+  closeText: { color: '#fff', fontWeight: 'bold' },
+  
+  // Estilos del Bottom Sheet
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semitransparente (se ve WhatsApp detrás)
+  },
+  modalContent: {
+    backgroundColor: '#1e293b',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '60%', // No ocupa toda la pantalla
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#475569',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  groupItem: {
+    backgroundColor: '#0f172a',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  groupItemActive: {
+    backgroundColor: '#22c55e', // Verde si es el activo
+  },
+  groupText: { color: '#fff', fontSize: 16 },
+  cancelBtn: {
+    marginTop: 10,
+    padding: 15,
+    alignItems: 'center',
+  },
+  cancelText: { color: '#94a3b8', fontSize: 16 },
+});
 
 export default App;
