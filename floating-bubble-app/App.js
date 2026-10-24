@@ -9,6 +9,16 @@ const App = () => {
   const [groups, setGroups] = useState([]);
   const [activeGroup, setActiveGroup] = useState('ninguno');
 
+  // Función para MINIMIZAR en lugar de CERRAR
+  const minimizeApp = () => {
+    if (BackHandler.moveTaskToBack) {
+      BackHandler.moveTaskToBack(true);
+    } else {
+      // Fallback por si acaso (en algunas versiones viejas no está expuesto)
+      BackHandler.exitApp(); 
+    }
+  };
+
   // 1. Obtener grupos del backend
   const fetchGroups = async () => {
     try {
@@ -37,7 +47,7 @@ const App = () => {
     fetchGroups();
   }, []);
 
-  // 3. Cambiar de grupo y minimizar app
+  // 3. Cambiar de grupo y MINIMIZAR app
   const setGroup = async (groupName) => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/set-group', {
@@ -51,8 +61,8 @@ const App = () => {
         setActiveGroup(data.group || groupName);
         ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
         
-        // Minimiza la app inmediatamente para volver a WhatsApp
-        setTimeout(() => BackHandler.exitApp(), 300);
+        // AQUÍ ESTÁ EL CAMBIO: Minimizamos en vez de matar la app
+        setTimeout(() => minimizeApp(), 300);
       } else {
         Alert.alert('Error', 'El servidor rechazó la petición');
       }
@@ -61,11 +71,11 @@ const App = () => {
     }
   };
 
-  // 4. Cerrar la burbuja y la app
+  // 4. Cerrar la burbuja y minimizar
   const handleCloseApp = async () => {
     await FloatingBubble.hide();
     ToastAndroid.show('Burbuja cerrada', ToastAndroid.SHORT);
-    setTimeout(() => BackHandler.exitApp(), 300);
+    setTimeout(() => minimizeApp(), 300);
   };
 
   return (
@@ -73,18 +83,16 @@ const App = () => {
       <Text style={styles.title}>Panel de Control</Text>
       <Text style={styles.subtitle}>Grupo activo: {activeGroup}</Text>
 
-      {/* Botones de acción */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.btnUpdate} onPress={fetchGroups}>
           <Text style={styles.btnText}>Actualizar Grupos</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.btnClose} onPress={handleCloseApp}>
-          <Text style={styles.btnText}>Cerrar Burbuja y App</Text>
+          <Text style={styles.btnText}>Cerrar Burbuja</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Lista de grupos */}
       {groups.length === 0 ? (
         <Text style={styles.emptyText}>No hay grupos cargados.</Text>
       ) : (
@@ -109,75 +117,20 @@ const App = () => {
   );
 };
 
+// ... (los estilos se quedan exactamente igual que en el mensaje anterior) ...
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0f172a', // Fondo oscuro sólido
-    padding: 20,
-    paddingTop: 50,
-  },
-  title: {
-    fontSize: 24,
-    color: '#fff',
-    fontWeight: 'bold',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#94a3b8',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 10,
-  },
-  btnUpdate: {
-    flex: 1,
-    backgroundColor: '#3b82f6',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  btnClose: {
-    flex: 1,
-    backgroundColor: '#ef4444',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  btnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  list: {
-    flex: 1,
-  },
-  groupItem: {
-    backgroundColor: '#1e293b',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  groupItemActive: {
-    backgroundColor: '#22c55e',
-    borderColor: '#16a34a',
-  },
-  groupText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  emptyText: {
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginTop: 20,
-  }
+  container: { flex: 1, backgroundColor: '#0f172a', padding: 20, paddingTop: 50 },
+  title: { fontSize: 24, color: '#fff', fontWeight: 'bold', marginBottom: 5, textAlign: 'center' },
+  subtitle: { fontSize: 16, color: '#94a3b8', marginBottom: 20, textAlign: 'center' },
+  actions: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 10 },
+  btnUpdate: { flex: 1, backgroundColor: '#3b82f6', padding: 15, borderRadius: 8, alignItems: 'center' },
+  btnClose: { flex: 1, backgroundColor: '#ef4444', padding: 15, borderRadius: 8, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  list: { flex: 1 },
+  groupItem: { backgroundColor: '#1e293b', padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: '#334155' },
+  groupItemActive: { backgroundColor: '#22c55e', borderColor: '#16a34a' },
+  groupText: { color: '#fff', fontSize: 16 },
+  emptyText: { color: '#94a3b8', textAlign: 'center', marginTop: 20 }
 });
 
 export default App;
