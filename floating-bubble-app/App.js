@@ -51,40 +51,41 @@ const App = () => {
   };
 
   // 3. Cambiar de grupo, guardar y minimizar
-  const setGroup = async (groupName) => {
-    try {
-      const res = await fetch('http://127.0.0.1:3000/api/set-group', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ group: groupName }),
-      });
+const setGroup = async (groupName) => {
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/set-group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group: groupName }),
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      const finalGroup = data.group || groupName;
       
-      if (res.ok) {
-        const data = await res.json();
-        const finalGroup = data.group || groupName;
-        
-        // Actualizamos la interfaz
-        setActiveGroup(finalGroup);
-        
-        // Guardamos en el almacenamiento local para que sobreviva a cualquier reinicio del sistema
-        await AsyncStorage.setItem('@active_group', finalGroup);
-        
-        ToastAndroid.show(`Grupo: ${finalGroup}`, ToastAndroid.SHORT);
-        
-        // Minimizar la app suavemente
-        setTimeout(() => {
-          if (BackHandler.moveTaskToBack) {
-            BackHandler.moveTaskToBack(true);
-          }
-        }, 500); // 500ms para dar tiempo a que el Toast aparezca y se guarde el estado
+      // 1. Actualizamos la interfaz
+      setActiveGroup(finalGroup);
+      
+      // 2. Guardamos en el almacenamiento local (esto toma unos milisegundos)
+      await AsyncStorage.setItem('@active_group', finalGroup);
+      
+      // 3. Mostramos el Toast
+      ToastAndroid.show(`Grupo: ${finalGroup}`, ToastAndroid.SHORT);
+      
+      // 4. Minimizamos con un margen de 800ms para que el Toast se vea bien
+      setTimeout(() => {
+        if (BackHandler.moveTaskToBack) {
+          BackHandler.moveTaskToBack(true);
+        }
+      }, 800); 
 
-      } else {
-        Alert.alert('Error', 'El servidor rechazó la petición');
-      }
-    } catch (e) {
-      Alert.alert('Error', 'No se pudo conectar al backend');
+    } else {
+      Alert.alert('Error', 'El servidor rechazó la petición');
     }
-  };
+  } catch (e) {
+    Alert.alert('Error', 'No se pudo conectar al backend');
+  }
+};
 
   // 4. Cerrar burbuja y limpiar estado
   const handleCloseApp = async () => {
