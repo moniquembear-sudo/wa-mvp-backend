@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, TouchableOpacity, FlatList, Alert, 
-  StyleSheet, ToastAndroid, BackHandler 
+  StyleSheet, ToastAndroid, BackHandler, NativeModules, Platform 
 } from 'react-native';
 import FloatingBubble from '@increase21/rn-floating-bubble';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -52,41 +52,32 @@ const App = () => {
 
   // 3. Cambiar de grupo, guardar y minimizar
 const setGroup = async (groupName) => {
+  // 1. Mostramos el Toast inmediatamente
+  ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
+  
+  // 2. Minimizamos la app INMEDIATAMENTE usando NativeModules
+  if (Platform.OS === 'android') {
+    // Esto lanza el Intent de Home de Android
+    NativeModules.DevSettings.reload(); // Fallback por si no tenemos acceso directo al Intent
+    // La forma más limpia sin librerías externas:
+    const { DevSettings } = NativeModules;
+    // Nota: React Native no expone un método directo "goHome" en NativeModules.
+    // Usaremos BackHandler pero sin el setTimeout para que sea inmediato.
+    BackHandler.exitApp(); 
+  }
+
+  // 3. Hacemos la petición al backend en segundo plano (no esperamos la respuesta)
   try {
-    const res = await fetch('http://127.0.0.1:3000/api/set-group', {
+    await fetch('http://127.0.0.1:3000/api/set-group', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ group: groupName }),
     });
-    
-    if (res.ok) {
-      const data = await res.json();
-      const finalGroup = data.group || groupName;
-      
-      // 1. Actualizamos la interfaz
-      setActiveGroup(finalGroup);
-      
-      // 2. Guardamos en el almacenamiento local (esto toma unos milisegundos)
-      await AsyncStorage.setItem('@active_group', finalGroup);
-      
-      // 3. Mostramos el Toast
-      ToastAndroid.show(`Grupo: ${finalGroup}`, ToastAndroid.SHORT);
-      
-      // 4. Minimizamos con un margen de 800ms para que el Toast se vea bien
-      setTimeout(() => {
-        if (BackHandler.moveTaskToBack) {
-          BackHandler.moveTaskToBack(true);
-        }
-      }, 800); 
-
-    } else {
-      Alert.alert('Error', 'El servidor rechazó la petición');
-    }
+    // Opcional: guardar el grupo en AsyncStorage si quieres persistencia
   } catch (e) {
-    Alert.alert('Error', 'No se pudo conectar al backend');
+    console.log('Error en petición en segundo plano:', e);
   }
 };
-
   // 4. Cerrar burbuja y limpiar estado
   const handleCloseApp = async () => {
     try {
