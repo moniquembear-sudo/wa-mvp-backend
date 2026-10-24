@@ -52,30 +52,26 @@ const App = () => {
 
   // 3. Cambiar de grupo, guardar y minimizar
 const setGroup = async (groupName) => {
-  // 1. Mostramos el Toast inmediatamente
-  ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
-  
-  // 2. Minimizamos la app INMEDIATAMENTE usando NativeModules
-  if (Platform.OS === 'android') {
-    // Esto lanza el Intent de Home de Android
-    NativeModules.DevSettings.reload(); // Fallback por si no tenemos acceso directo al Intent
-    // La forma más limpia sin librerías externas:
-    const { DevSettings } = NativeModules;
-    // Nota: React Native no expone un método directo "goHome" en NativeModules.
-    // Usaremos BackHandler pero sin el setTimeout para que sea inmediato.
-    BackHandler.exitApp(); 
-  }
-
-  // 3. Hacemos la petición al backend en segundo plano (no esperamos la respuesta)
   try {
-    await fetch('http://127.0.0.1:3000/api/set-group', {
+    const res = await fetch('http://127.0.0.1:3000/api/set-group', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ group: groupName }),
     });
-    // Opcional: guardar el grupo en AsyncStorage si quieres persistencia
+    
+    if (res.ok) {
+      const data = await res.json();
+      setActiveGroup(data.group || groupName);
+      await AsyncStorage.setItem('@active_group', data.group || groupName);
+      ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
+      
+      // Enviamos la app al fondo SIN matarla
+      setTimeout(() => {
+        BackHandler.moveTaskToBack(true);
+      }, 500);
+    }
   } catch (e) {
-    console.log('Error en petición en segundo plano:', e);
+    Alert.alert('Error', 'No se pudo conectar');
   }
 };
   // 4. Cerrar burbuja y limpiar estado
