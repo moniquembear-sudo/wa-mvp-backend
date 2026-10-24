@@ -4,22 +4,37 @@ import {
   StyleSheet, ToastAndroid, BackHandler 
 } from 'react-native';
 import FloatingBubble from '@increase21/rn-floating-bubble';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const App = () => {
   const [groups, setGroups] = useState([]);
   const [activeGroup, setActiveGroup] = useState('ninguno');
 
-  // Función para MINIMIZAR en lugar de CERRAR
-  const minimizeApp = () => {
-    if (BackHandler.moveTaskToBack) {
-      BackHandler.moveTaskToBack(true);
-    } else {
-      // Fallback por si acaso (en algunas versiones viejas no está expuesto)
-      BackHandler.exitApp(); 
-    }
-  };
+  // 1. Cargar estado inicial y configurar burbuja
+  useEffect(() => {
+    const loadState = async () => {
+      try {
+        // Recuperar el grupo que estaba activo antes de que la app se cerrara/minimizara
+        const savedGroup = await AsyncStorage.getItem('@active_group');
+        if (savedGroup) {
+          setActiveGroup(savedGroup);
+        }
 
-  // 1. Obtener grupos del backend
+        // Iniciar la burbuja
+        const granted = await FloatingBubble.requestPermission();
+        if (granted) {
+          await FloatingBubble.show();
+        }
+      } catch (e) {
+        console.log('Error cargando estado:', e);
+      }
+    };
+    
+    loadState();
+    fetchGroups();
+  }, []);
+
+  // 2. Obtener grupos del backend
   const fetchGroups = async () => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/groups');
@@ -35,19 +50,7 @@ const App = () => {
     }
   };
 
-  // 2. Configurar la burbuja al arrancar
-  useEffect(() => {
-    const setup = async () => {
-      const granted = await FloatingBubble.requestPermission();
-      if (granted) {
-        await FloatingBubble.show();
-      }
-    };
-    setup();
-    fetchGroups();
-  }, []);
-
-  // 3. Cambiar de grupo y MINIMIZAR app
+  // 3. Cambiar de grupo, guardar y minimizar
   const setGroup = async (groupName) => {
     try {
       const res = await fetch('http://127.0.0.1:3000/api/set-group', {
@@ -58,11 +61,23 @@ const App = () => {
       
       if (res.ok) {
         const data = await res.json();
-        setActiveGroup(data.group || groupName);
-        ToastAndroid.show(`Grupo: ${groupName}`, ToastAndroid.SHORT);
+        const finalGroup = data.group || groupName;
         
-        // AQUÍ ESTÁ EL CAMBIO: Minimizamos en vez de matar la app
-        setTimeout(() => minimizeApp(), 300);
+        // Actualizamos la interfaz
+        setActiveGroup(finalGroup);
+        
+        // Guardamos en el almacenamiento local para que sobreviva a cualquier reinicio del sistema
+        await AsyncStorage.setItem('@active_group', finalGroup);
+        
+        ToastAndroid.show(`Grupo: ${finalGroup}`, ToastAndroid.SHORT);
+        
+        // Minimizar la app suavemente
+        setTimeout(() => {
+          if (BackHandler.moveTaskToBack) {
+            BackHandler.moveTaskToBack(true);
+          }
+        }, 500); // 500ms para dar tiempo a que el Toast aparezca y se guarde el estado
+
       } else {
         Alert.alert('Error', 'El servidor rechazó la petición');
       }
@@ -71,11 +86,21 @@ const App = () => {
     }
   };
 
-  // 4. Cerrar la burbuja y minimizar
+  // 4. Cerrar burbuja y limpiar estado
   const handleCloseApp = async () => {
-    await FloatingBubble.hide();
-    ToastAndroid.show('Burbuja cerrada', ToastAndroid.SHORT);
-    setTimeout(() => minimizeApp(), 300);
+    try {
+      await FloatingBubble.hide();
+      await AsyncStorage.removeItem('@active_group'); // Limpiamos el grupo activo
+      ToastAndroid.show('Burbuja cerrada', ToastAndroid.SHORT);
+      
+      setTimeout(() => {
+        if (BackHandler.moveTaskToBack) {
+          BackHandler.moveTaskToBack(true);
+        }
+      }, 300);
+    } catch (e) {
+      console.log('Error al cerrar:', e);
+    }
   };
 
   return (
@@ -85,7 +110,7 @@ const App = () => {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.btnUpdate} onPress={fetchGroups}>
-          <Text style={styles.btnText}>Actualizar Grupos</Text>
+          <Text style={styles.btnText}>Actualizar</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.btnClose} onPress={handleCloseApp}>
@@ -117,7 +142,6 @@ const App = () => {
   );
 };
 
-// ... (los estilos se quedan exactamente igual que en el mensaje anterior) ...
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f172a', padding: 20, paddingTop: 50 },
   title: { fontSize: 24, color: '#fff', fontWeight: 'bold', marginBottom: 5, textAlign: 'center' },
@@ -130,7 +154,7 @@ const styles = StyleSheet.create({
   groupItem: { backgroundColor: '#1e293b', padding: 15, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: '#334155' },
   groupItemActive: { backgroundColor: '#22c55e', borderColor: '#16a34a' },
   groupText: { color: '#fff', fontSize: 16 },
-  emptyText: { color: '#94a3b8', textAlign: 'center', marginTop: 20 }
+  emptyText: { color: '#94a3b8', textAlign: 'center', marginTop: 20 },
 });
 
 export default App;
