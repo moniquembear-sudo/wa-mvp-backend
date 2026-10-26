@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-intent-launcher/android/build.gradle b/node_modules/react-native-intent-launcher/android/build.gradle
+index ae3c73b..1f6c0b0 100644
+--- a/node_modules/react-native-intent-launcher/android/build.gradle
++++ b/node_modules/react-native-intent-launcher/android/build.gradle
+@@ -16,7 +16,7 @@ android {
+ }
+ 
+ dependencies {
+-    compile fileTree(dir: "libs", include: ["*.jar"])
++    implementation fileTree(dir: "libs", include: ["*.jar"])
+     compile "com.android.support:appcompat-v7:+"
+     compile "com.facebook.react:react-native:+"  // From node_modules
+ }
