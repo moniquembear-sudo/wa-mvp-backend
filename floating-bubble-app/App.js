@@ -6,7 +6,7 @@ import {
 import FloatingBubble from '@increase21/rn-floating-bubble';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import IntentLauncher from 'react-native-intent-launcher';
+import IntentLauncher from 'react-native-android-intent-launcher';
 
 const App = () => {
   const [groups, setGroups] = useState([]);
