@@ -6,7 +6,7 @@ import {
 import FloatingBubble from '@increase21/rn-floating-bubble';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import IntentLauncher from 'react-native-android-intent-launcher';
+import { Linking } from 'react-native';
 
 const App = () => {
   const [groups, setGroups] = useState([]);
@@ -15,22 +15,25 @@ const App = () => {
        // Función para despertar el backend
 const wakeUpBackend = async () => {
   try {
+    // 1. Verificamos si el backend ya responde
     const check = await fetch('http://127.0.0.1:3000/api/status').catch(() => null);
     if (check && check.ok) {
       console.log('Backend ya está despierto');
       return;
     }
 
-    console.log('Despertando backend...');
-    await IntentLauncher.startActivity({
-      action: 'com.termux.RUN_COMMAND',
-      // QUITAMOS packageName
-      className: 'com.termux.app.RunCommandService',
-      extra: {
-        'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/home/backend/start_from_app.sh',
-        'com.termux.RUN_COMMAND_BACKGROUND': true,
-      },
-    });
+    // 2. Si no responde, intentamos abrir Termux con el comando
+    console.log('Despertando backend vía Termux...');
+    // El esquema termux:// permite ejecutar comandos si Termux está configurado
+    const command = encodeURIComponent('bash ~/backend/start_from_app.sh');
+    const termuxUrl = `termux://execute?command=${command}`;
+    
+    const supported = await Linking.canOpenURL(termuxUrl);
+    if (supported) {
+      await Linking.openURL(termuxUrl);
+    } else {
+      console.log('Termux no está instalado o no soporta este comando');
+    }
   } catch (error) {
     console.error('Error al despertar el backend:', error);
   }
