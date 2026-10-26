@@ -2,55 +2,42 @@ extends layout
 
 block content
   section.card
-    h2 Productos
-    if groups.length === 0
-      p.no-data No hay productos procesados aún.
-    else
-      form.group-filter
-        label(for="groupFilter") Grupo
-        select#groupFilter(name="group", onchange="window.location.href='/panel/products?group=' + encodeURIComponent(this.value)")
-          each g in groups
-            option(value=g, selected=(g === selectedGroup))= g
+    .header-actions
+      h2 Productos
+        .filter-container
+          //- oninput hace que se ejecute en tiempo real al teclear
+          input#filterInput(type="text" placeholder="Buscar en todas las columnas..." oninput="applyFilter()")
+    //- Loader de OCR
+    #ocrLoader.loader-container(style="display:none")
+      .spinner
+      span El OCR está analizando nuevas imágenes en segundo plano...
 
-  if products.length > 0
-    .product-grid
-      each p in products
-        section.card.product-card
-          if p.media_filename && p.media_group_folder
-            img.product-img(
-              src=`/media-files/${p.media_group_folder}/${p.media_filename}`,
-              alt=p.category || 'Producto',
-              loading="lazy"
-            )
-          else
-            .no-img Sin imagen
+    //- Barra de acciones masivas
+    .bulk-actions
+      button.btn.btn-primary(type="button" onclick="compartirSeleccionados()") Compartir seleccionados
+      button.btn.btn-danger(type="button" onclick="eliminarSeleccionados()") Eliminar seleccionados
+      span#selection-count 0 seleccionados
 
-          h3= p.category || 'Sin categoría'
+    .table-container
+      table.product-table
+        thead
+          tr
+            th
+              input(type="checkbox" id="selectAll" onchange="toggleAll(this)")
+            th Foto
+            th(onclick="sortTable('group')") Grupo ⇅
+            th(onclick="sortTable('category')") Categoría 
+              span#ind-category.indicator
+            th(onclick="sortTable('price')") Precio 
+              span#ind-price.indicator
+            th(onclick="sortTable('date')") Fecha ⇅
+            th Acciones
+        tbody#productBody
+          //- Se llena vía AJAX
 
-          if p.price
-            p.price= `${p.price} ${p.currency || 'USD'}`
-          else
-            p.price.sin-precio Sin precio
+  //- Modal para agrandar imagen
+  div#imageModal.modal(style="display:none")
+    span.close &times;
+    img#modalImage.modal-content
 
-          details.ocr-details
-            summary Ver texto OCR
-            pre.ocr-text= p.ocr_text || '(sin texto OCR)'
-
-          form.product-form(data-id=p._id)
-            .row
-              label Precio
-              input(type="number", step="0.01", name="price", value=p.price || '')
-              label Moneda
-              select(name="currency")
-                option(value="USD", selected=(p.currency === 'USD')) USD
-                option(value="CUP", selected=(p.currency === 'CUP')) CUP
-            .row
-              label Categoría
-              input(type="text", name="category", value=p.category || '')
-            .row
-              label Publicado
-              input(type="checkbox", name="published", checked=p.published)
-            .actions
-              button.btn.btn-primary(type="submit") Guardar
-              button.btn.btn-danger(type="button", onclick=`deleteProduct('${p._id}')`) Eliminar
   script(src="/products.js")

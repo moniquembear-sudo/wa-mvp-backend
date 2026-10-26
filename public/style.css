@@ -72,7 +72,7 @@ body {
 .container {
   flex: 1;
   width: 100%;
-  max-width: 960px;
+  max-width: 1200px; /* Ampliado para que quepa la tabla */
   margin: 0 auto;
   padding: 1rem;
   display: flex;
@@ -93,14 +93,7 @@ body {
   font-weight: 600;
 }
 
-.card h3 {
-  font-size: 0.95rem;
-  margin: 1rem 0 0.5rem;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-/* ---- STATUS (panel de grupos) ---- */
+/* ---- STATUS (PANEL DE GRUPOS) ---- */
 
 .status {
   display: flex;
@@ -203,7 +196,7 @@ select:focus {
   background: #dc2626;
 }
 
-/* ---- LISTA DE GRUPOS (panel principal) ---- */
+/* ---- LISTA DE GRUPOS (PANEL PRINCIPAL) ---- */
 
 .group-list {
   list-style: none;
@@ -249,157 +242,189 @@ select:focus {
   gap: 0.5rem;
 }
 
-/* ---- FILTRO DE GRUPO (panel de productos) ---- */
+/* ---- TABLA DE PRODUCTOS ---- */
 
-.group-filter {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
+.table-container {
+  overflow-x: auto;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  margin-top: 1rem;
 }
 
-.group-filter select {
-  flex: 1;
-  min-width: 150px;
-}
-
-/* ---- GRID DE PRODUCTOS ---- */
-
-.product-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.product-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.product-img {
+.product-table {
   width: 100%;
-  height: 180px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.product-table th,
+.product-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Línea invisible sutil */
+}
+
+.product-table th {
+  background: rgba(255, 255, 255, 0.02);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.product-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.thumbnail {
+  width: 48px;
+  height: 48px;
   object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-  background: var(--bg);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.no-img {
-  width: 100%;
-  height: 180px;
+.thumbnail:hover {
+  transform: scale(1.1);
+}
+
+.no-img-small {
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.group-cell {
   font-size: 0.85rem;
-  margin-bottom: 0.75rem;
+  color: var(--muted);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.product-card h3 {
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
-  color: var(--text);
+.category-cell {
+  font-weight: 500;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.price {
-  font-size: 1.1rem;
+.price-cell {
   font-weight: 600;
   color: var(--success);
-  margin-bottom: 0.5rem;
+  white-space: nowrap;
 }
 
-.price.sin-precio {
+.price-cell .sin-precio {
   color: var(--muted);
-  font-size: 0.9rem;
   font-weight: 400;
 }
 
-/* ---- TEXTO OCR COLAPSABLE ---- */
-
-.ocr-details {
-  margin-bottom: 0.75rem;
-  font-size: 0.85rem;
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
-.ocr-details summary {
-  cursor: pointer;
-  color: var(--muted);
-  padding: 0.25rem 0;
-}
-
-.ocr-details .ocr-text {
+.icon-btn {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  max-height: 150px;
-  overflow: auto;
-  white-space: pre-wrap;
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-family: monospace;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
-/* ---- FORMULARIO DE PRODUCTO ---- */
+.icon-btn:hover {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+}
 
-.product-form .row {
+.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger);
+}
+
+/* ---- BARRA DE ACCIONES MASIVAS ---- */
+
+.bulk-actions {
   display: flex;
-  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
   flex-wrap: wrap;
 }
 
-.product-form label {
-  min-width: 70px;
+#selection-count {
+  color: var(--muted);
   font-size: 0.85rem;
 }
 
-.product-form input[type="text"],
-.product-form input[type="number"],
-.product-form select {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  flex: 1;
-  min-width: 80px;
-  font-size: 0.9rem;
+/* ---- MODAL DE IMAGEN ---- */
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  text-align: center;
 }
 
-.product-form .actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+.modal-content {
+  margin: auto;
+  display: block;
+  max-width: 90%;
+  max-height: 90vh;
+  margin-top: 5vh;
+  border-radius: 8px;
 }
 
-.product-form .actions .btn {
-  flex: 1;
-  font-size: 0.85rem;
-  padding: 0.5rem;
+.close {
+  position: absolute;
+  top: 15px;
+  right: 25px;
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1000;
 }
 
-/* ---- ESTADOS VACÍOS ---- */
+.close:hover {
+  color: var(--danger);
+}
+
+/* ---- ESTADOS VACÍOS Y OTROS ---- */
 
 .no-data {
   color: var(--muted);
   text-align: center;
   padding: 1rem;
 }
-
-/* ---- FOOTER ---- */
 
 .footer {
   padding: 1rem;
@@ -409,7 +434,7 @@ select:focus {
   border-top: 1px solid var(--border);
 }
 
-/* ---- RESPONSIVE (pantallas grandes) ---- */
+/* ---- RESPONSIVE ---- */
 
 @media (min-width: 640px) {
   .header h1 {
@@ -421,4 +446,77 @@ select:focus {
   .card {
     padding: 1.5rem;
   }
+}
+
+/* ---- FILTROS Y HEADER ---- */
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-container {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 400px;
+}
+
+.filter-container input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---- INDICADORES (PUNTOS ROJOS) ---- */
+.indicator {
+  display: none;
+  width: 8px;
+  height: 8px;
+  background-color: var(--danger);
+  border-radius: 50%;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* ---- LOADER OCR ---- */
+.loader-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(234, 179, 8, 0.1); /* Color amarillo de advertencia */
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: #fef08a;
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- ORDENACIÓN ---- */
+th[onclick] {
+  cursor: pointer;
+  user-select: none;
+}
+th[onclick]:hover {
+  color: var(--text);
 }

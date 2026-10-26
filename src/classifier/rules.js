@@ -1,15 +1,61 @@
-// Categorías conocidas y sus palabras clave
+// Categorías basadas en el catálogo real
 const CATEGORIES = {
-  'TV': ['tv', 'televisor', 'pantalla', 'pulgadas', 'smart tv'],
-  'Ollas': ['olla', 'ollas', 'presion', 'presión', 'reina', 'cacerola'],
-  'Nevera/Frezzer': ['frezzer', 'freezer', 'nevera', 'refrigerador', 'refri', 'congelador'],
-  'Combos': ['combo', 'combos', 'paquete', 'set'],
-  'Hornos': ['horno', 'microondas', 'estufa', 'cocina'],
-  'Arroceras': ['arrocera', 'arroz', 'rice cooker'],
-  'Ventiladores': ['ventilador', 'abanico', 'pedestal', 'pared'],
-  'Bicicletas': ['bici', 'bicicleta', 'bike'],
-  'Audio': ['speaker', 'bocina', 'parlante', 'audio', 'radio'],
-  'Celulares': ['celular', 'telefono', 'teléfono', 'smartphone', 'movil', 'móvil'],
+  'TV / Smart TV': ['tv', 'televisor', 'television', 'smart tv', 'smarttv', 'pantalla', 'led', 'pulgadas'],
+  
+  'Ollas y Calderos': [
+    'olla', 'arrocera', 'reyna', 'presion', 'presión', 'caldero', 'juego de calderos', 
+    'multifuncional', 'multicocina'
+  ],
+
+  'Fogones y Cocinas': [
+    'fogon', 'fogón', 'infrarrojo', 'gas', 'induccion', 'inducción', 'mecha', 
+    'horno', 'gasolina', 'estufa', 'cocina'
+  ],
+
+  'Neveras y Refrigeración': [
+    'nevera', 'exhibidor', 'vertical', 'refrigerador', 'refri', 'freezer', 'frezzer', 
+    'minibar', 'congelador', 'base para refrigerador', 'protector de voltage', 'protector de voltaje'
+  ],
+
+  'Aires Acondicionados': [
+    'split', 'soporte para split', 'aire acondicionado', 'ac', 'inverter', 'toneladas'
+  ],
+
+  'Ventiladores': [
+    'ventilador', 'abanico', 'pared', 'pie', 'recargable', 'techo', 'mesa'
+  ],
+
+  'Menaje y Organización': [
+    'estante', 'estantes', 'baño', 'baños', 'cocina', 'escurridor', 'platero', 
+    'juego de taza', 'juego de cubiertos', 'juego de platos', 'vajilla', 'organizador'
+  ],
+
+  'Pequeños Electrodomésticos': [
+    'sandwishera', 'sandwichera', 'freidora', 'aire', 'vapor', 'cafetera', 
+    'expreso', 'batidora', 'licuadora', 'tostadora', 'microondas'
+  ],
+
+  'Vehículos Eléctricos': [
+    'moto electrica', 'moto eléctrica', 'motorina', 'bicimoto', 'bicicleta', 'bici', 'scooter'
+  ],
+
+  'Energía Solar y Respaldo': [
+    'estacion de energia', 'estación de energía', 'oupes', 'ecoflow', 'backup', 
+    'kit solar', 'bateria', 'batería', 'litio', 'panel solar', 'panel', 'breket', 
+    'cable conector', 'cable fotovoltaico', 'turbina', 'dispensador', 'inversor', 
+    'controlador', 'voltaje', 'bluetti', 'solar'
+  ],
+
+  'Calentadores y Climatización': [
+    'presurizador', 'calentador', 'central', 'agua'
+  ],
+
+  'Muebles y Hogar': [
+    'colchon', 'colchón', 'mesa', 'paca de ropas', 'ropa', 'sabanas', 'sábanas'
+  ],
+
+  // Categoría comodín para lo que no encaje
+  'Variados / Combos': ['combo', 'variado', 'oferta', 'paquete', 'lote']
 };
 
 // Extrae precio del texto. Soporta formatos como:
@@ -55,7 +101,13 @@ function detectCategory(text) {
   for (const [category, keywords] of Object.entries(CATEGORIES)) {
     let score = 0;
     for (const kw of keywords) {
-      if (lower.includes(kw)) score++;
+      // Usamos expresión regular para buscar la palabra completa o parte de ella
+      // El \b asegura que no haga match con partes de otras palabras (ej: 'ac' en 'paca')
+      const regex = new RegExp(`\\b${kw}\\b`, 'gi');
+      const matches = lower.match(regex);
+      if (matches) {
+        score += matches.length; // Sumamos cuántas veces aparece
+      }
     }
     if (score > bestScore) {
       bestScore = score;
@@ -76,4 +128,9 @@ function classify(ocrText) {
   };
 }
 
-module.exports = { classify, extractPrice, extractCurrency, detectCategory, CATEGORIES };
+// Devuelve los tags (palabras clave) de una categoría específica
+function getTagsForCategory(category) {
+  return CATEGORIES[category] || [];
+}
+
+module.exports = { classify, extractPrice, extractCurrency, detectCategory, getTagsForCategory, CATEGORIES };

@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const db = require('./src/db/low');
 const processor = require('./src/processor');
 const { startWatcher } = require('./watcher');
+const { getTagsForCategory } = require('./src/classifier/rules');
 
 const app = express();
 const PORT = 3000;
@@ -54,30 +55,29 @@ app.get('/', async (req, res) => {
 
 // ---- PANEL DE PRODUCTOS ----
 
-app.get('/panel/products', async (req, res) => {
+// Ruta principal del panel (solo carga la vista)
+app.get('/panel/products', (req, res) => {
+  res.render('products');
+});
+
+// API para obtener todos los productos (con datos de media)
+app.get('/api/products', async (req, res) => {
   const dbInstance = await db.getDb();
-  const groups = [...new Set(dbInstance.data.products.map(p => p.group))];
-  const group = req.query.group || groups[0] || null;
-
-  let products = [];
-  if (group) {
-    products = dbInstance.data.products
-      .filter(p => p.group === group)
-      .map(p => {
-        const mediaDoc = dbInstance.data.media.find(m => m._id === p.media_id);
-        return {
-          ...p,
-          media_filename: mediaDoc ? mediaDoc.filename : null,
-          media_group_folder: mediaDoc ? sanitizeGroupName(mediaDoc.group) : null,
-        };
-      });
-  }
-
-  res.render('products', {
-    groups,
-    selectedGroup: group,
-    products,
+  
+  const products = dbInstance.data.products.map(p => {
+    const mediaDoc = dbInstance.data.media.find(m => m._id === p.media_id);
+    return {
+      ...p,
+      media_filename: mediaDoc ? mediaDoc.filename : null,
+      media_group_folder: mediaDoc ? sanitizeGroupName(mediaDoc.group) : null,
+      date: mediaDoc ? mediaDoc.timestamp : p.created_at,
+      // INYECTAMOS LOS TAGS AQUÍ
+      tags: p.category ? getTagsForCategory(p.category) : []
+    };
   });
+
+  products.sort((a, b) => new Date(b.date) - new Date(a.date));
+  res.json(products);
 });
 
 // ---- API ----
@@ -110,10 +110,10 @@ app.get('/api/media/:group', async (req, res) => {
   res.json({ group: req.params.group, count: mediaList.length, files: mediaList });
 });
 
-app.get('/api/products', async (req, res) => {
-  const products = await db.getAllProducts();
-  res.json({ count: products.length, products });
-});
+// app.get('/api/products', async (req, res) => {
+//   const products = await db.getAllProducts();
+//   res.json({ count: products.length, products });
+// });
 
 app.get('/api/products/:group', async (req, res) => {
   const products = await db.getProductsByGroup(req.params.group);
@@ -164,6 +164,31 @@ app.get('/api/groups', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Endpoint para saber cuántas imágenes están pendientes de OCR
+app.get('/api/ocr/status', async (req, res) => {
+  const dbInstance = await db.getDb();
+  
+  // 1. Contamos cuántas imágenes están pendientes de procesar
+  const pending = dbInstance.data.media.filter(m => m.processed === false).length;
+  
+  // 2. Contamos cuántos productos hay en total (para saber si la tabla cambió)
+  const totalProducts = dbInstance.data.products.length;
+  
+  res.json({ pending, totalProducts });
+});
+
+// Endpoint para descargar la imagen y poder compartirla
+app.get('/api/media/download/:mediaId', async (req, res) => {
+  const dbInstance = await db.getDb();
+  const media = dbInstance.data.media.find(m => m._id === req.params.mediaId);
+  
+  if (!media || !fs.existsSync(media.dest_path)) {
+    return res.status(404).json({ error: 'Imagen no encontrada' });
+  }
+  
+  res.sendFile(media.dest_path);
 });
 
 // ---- ARRANQUE ----
