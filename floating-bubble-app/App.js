@@ -6,10 +6,37 @@ import {
 import FloatingBubble from '@increase21/rn-floating-bubble';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import IntentLauncher from 'react-native-intent-launcher';
+
 const App = () => {
   const [groups, setGroups] = useState([]);
   const [activeGroup, setActiveGroup] = useState('ninguno');
 
+       // Función para despertar el backend
+     const wakeUpBackend = async () => {
+       try {
+         // 1. Verificamos si el backend ya responde
+         const check = await fetch('http://127.0.0.1:3000/api/status').catch(() => null);
+         if (check && check.ok) {
+           console.log('Backend ya está despierto');
+           return;
+         }
+   
+         // 2. Si no responde, enviamos el Intent a Termux
+         console.log('Despertando backend...');
+         await IntentLauncher.startActivity({
+           action: 'com.termux.RUN_COMMAND',
+           packageName: 'com.termux',
+           className: 'com.termux.app.RunCommandService',
+           extra: {
+             'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/home/backend/start_from_app.sh',
+             'com.termux.RUN_COMMAND_BACKGROUND': true,
+           },
+         });
+       } catch (error) {
+         console.error('Error al despertar el backend:', error);
+       }
+     };
   // 1. Cargar estado inicial y configurar burbuja
   useEffect(() => {
     const loadState = async () => {
@@ -29,7 +56,7 @@ const App = () => {
         console.log('Error cargando estado:', e);
       }
     };
-    
+    wakeUpBackend();
     loadState();
     fetchGroups();
   }, []);

@@ -271,24 +271,116 @@ document.querySelector('.close').onclick = function() {
   document.getElementById('imageModal').style.display = "none";
 };
 
+// --- EDICIÓN ---
 async function editProduct(id) {
-  // ... (lógica de edición existente) ...
+  // Buscamos el producto en el array global, no en el DOM
+  const product = allProducts.find(p => p._id === id);
+  if (!product) return;
+
+  const newCategory = prompt('Nueva categoría:', product.category || '');
+  if (newCategory === null) return; // Canceló
+
+  const newPriceStr = prompt('Nuevo precio:', product.price || '');
+  if (newPriceStr === null) return;
+
+  const newPrice = newPriceStr.trim() === '' ? null : parseFloat(newPriceStr);
+
+  try {
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: newCategory, price: newPrice })
+    });
+    
+    if (res.ok) {
+      // Actualizamos el objeto local y re-renderizamos
+      product.category = newCategory;
+      product.price = newPrice;
+      
+      // Si cambió la categoría, actualizamos los tags para el filtro
+      const tagRes = await fetch('/api/products'); 
+      // (La forma más rápida es recargar los productos desde el backend para tener los tags actualizados)
+      await loadProducts(true); 
+    }
+  } catch (e) {
+    alert('Error al guardar');
+  }
 }
 
+// --- PUBLICAR ---
 async function publishProduct(id) {
-  // ... (lógica de publicación existente) ...
+  if (!confirm('¿Marcar como publicado?')) return;
+  try {
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published: true })
+    });
+    if (res.ok) {
+      const product = allProducts.find(p => p._id === id);
+      if (product) product.published = true;
+      alert('Producto marcado como publicado');
+    }
+  } catch (e) {
+    alert('Error al publicar');
+  }
 }
 
-async function marcarSeleccionados() {
-  // ... (lógica de marcado masivo existente) ...
-}
-
+// --- ELIMINAR UNO ---
 async function eliminarProducto(id) {
-  // ... (lógica de eliminación existente) ...
+  if (!confirm('¿Eliminar este producto de la base de datos?')) return;
+  try {
+    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      // Eliminamos del array global y recargamos la tabla
+      allProducts = allProducts.filter(p => p._id !== id);
+      renderTable(allProducts);
+      updateIndicators();
+    }
+  } catch (e) {
+    alert('Error al eliminar');
+  }
 }
 
+// --- ELIMINAR SELECCIONADOS ---
 async function eliminarSeleccionados() {
-  // ... (lógica de eliminación existente) ...
+  const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+  if (checkboxes.length === 0) {
+    alert('Selecciona al menos un producto');
+    return;
+  }
+
+  const ids = Array.from(checkboxes).map(cb => cb.value);
+  if (!confirm(`¿Eliminar ${ids.length} productos seleccionados?`)) return;
+
+  for (const id of ids) {
+    await fetch(`/api/products/${id}`, { method: 'DELETE' });
+  }
+  
+  // Recargamos toda la tabla desde el backend para asegurar consistencia
+  await loadProducts(true);
+}
+
+// --- PUBLICAR SELECCIONADOS ---
+async function marcarSeleccionados() {
+  const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+  if (checkboxes.length === 0) {
+    alert('Selecciona al menos un producto');
+    return;
+  }
+
+  const ids = Array.from(checkboxes).map(cb => cb.value);
+  if (!confirm(`¿Marcar ${ids.length} productos como publicados?`)) return;
+
+  for (const id of ids) {
+    await fetch(`/api/products/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ published: true })
+    });
+  }
+  alert('Productos publicados');
+  await loadProducts(true);
 }
 
 // Iniciar todo cuando el DOM esté listo

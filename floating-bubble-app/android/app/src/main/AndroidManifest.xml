@@ -23,4 +23,8 @@
         </intent-filter>
       </activity>
     </application>
+  <uses-permission android:name="com.termux.permission.RUN_COMMAND" />
+  <queries>
+      <package android:name="com.termux" />
+  </queries>
 </manifest>
