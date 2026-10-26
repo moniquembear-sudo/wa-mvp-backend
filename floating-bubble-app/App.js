@@ -13,30 +13,28 @@ const App = () => {
   const [activeGroup, setActiveGroup] = useState('ninguno');
 
        // Función para despertar el backend
-     const wakeUpBackend = async () => {
-       try {
-         // 1. Verificamos si el backend ya responde
-         const check = await fetch('http://127.0.0.1:3000/api/status').catch(() => null);
-         if (check && check.ok) {
-           console.log('Backend ya está despierto');
-           return;
-         }
-   
-         // 2. Si no responde, enviamos el Intent a Termux
-         console.log('Despertando backend...');
-         await IntentLauncher.startActivity({
-           action: 'com.termux.RUN_COMMAND',
-           packageName: 'com.termux',
-           className: 'com.termux.app.RunCommandService',
-           extra: {
-             'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/home/backend/start_from_app.sh',
-             'com.termux.RUN_COMMAND_BACKGROUND': true,
-           },
-         });
-       } catch (error) {
-         console.error('Error al despertar el backend:', error);
-       }
-     };
+const wakeUpBackend = async () => {
+  try {
+    const check = await fetch('http://127.0.0.1:3000/api/status').catch(() => null);
+    if (check && check.ok) {
+      console.log('Backend ya está despierto');
+      return;
+    }
+
+    console.log('Despertando backend...');
+    await IntentLauncher.startActivity({
+      action: 'com.termux.RUN_COMMAND',
+      // QUITAMOS packageName
+      className: 'com.termux.app.RunCommandService',
+      extra: {
+        'com.termux.RUN_COMMAND_PATH': '/data/data/com.termux/files/home/backend/start_from_app.sh',
+        'com.termux.RUN_COMMAND_BACKGROUND': true,
+      },
+    });
+  } catch (error) {
+    console.error('Error al despertar el backend:', error);
+  }
+};
   // 1. Cargar estado inicial y configurar burbuja
   useEffect(() => {
     const loadState = async () => {
