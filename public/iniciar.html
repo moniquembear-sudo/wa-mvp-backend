@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Servidor</title>
+    <style>
+        body { background: #0f172a; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 12px; border: 1px solid #334155; }
+        button { background: #3b82f6; color: white; border: none; padding: 1rem 2rem; font-size: 1rem; border-radius: 8px; cursor: pointer; margin-top: 1rem; }
+        button:active { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Servidor Apagado</h2>
+        <p>El backend no está corriendo.</p>
+        <button onclick="despertar()">Iniciar Servidor</button>
+    </div>
+    <script>
+        function despertar() {
+            // Intentamos abrir Termux con el comando para iniciar el backend
+            const comando = encodeURIComponent('bash ~/backend/start_from_app.sh');
+            const url = `termux://execute?command=${comando}`;
+            
+            // Redirigimos al esquema de Termux
+            window.location.href = url;
+            
+            // Después de 3 segundos, intentamos volver al panel original
+            setTimeout(() => {
+                window.location.href = 'http://127.0.0.1:3000';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
